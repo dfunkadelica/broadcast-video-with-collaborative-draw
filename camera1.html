@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<style type="text/css">
+
+#thevideo{
+	/*position: relative;*/
+	/*border: 30px;*/
+	outline-color: black;
+	width: 500px;
+	height: 500px;
+	
+	/*z-index: 1;*/
+
+}
+#otherperson{
+	/*position: ;*/
+	border: 30px;
+	outline-color: black;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	/*width: 500px;
+	height: 500px;*/
+}
+
+#myvideo{
+	width: 500px;
+	height: 500px;
+	/*display: none;*/
+}
+/*#feed{
+	width: 200px;
+	height: 200px;
+	display: none;
+}*/
+#mycanvas{
+
+	width: 300px;
+	height: 300px;
+	/*display: none;*/
+/*	position: relative;*/
+	/*z-index: 1;*/
+	
+}
+
+		</style>
+		<!-- <link rel="stylesheet" href="stylesheet.css"> -->
+		
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			var socket = io.connect('https://dib251.itp.io:8083/');
+			
+			socket.on('connect', function() {
+				console.log("Connected");
+			});
+
+			// Receive a message
+			socket.on('message', function (datareceived) {
+				//console.log("Got: " + data);
+				document.getElementById('otherperson').src = datareceived;
+				//document.getElementById('messages').innerHTML += data;
+			});
+
+			// Receive from any event
+			// socket.on('news', function (data) {
+			// 	console.log(data);
+			// });
+			
+			var sendmessage = function() {
+				var message = document.getElementById('message').value;
+				console.log("Sending: " + message);
+				
+				// Send a messaage
+				socket.send(message);
+			};
+			
+			var sendother = function() {
+				var othermessage = document.getElementById('message').value;
+				console.log("sending: " + othermessage);
+				
+				// Send any kind of data with a custom event
+				//socket.emit('otherevent',{ othermessage: othermessage });
+				socket.emit('otherevent', othermessage);
+			};
+
+			socket.on('othermouse', function (data) {
+				//console.log(data.x + " " + data.y);
+				odraw(data.x,data.y,data.id);
+			});
+			
+			var sendmouse = function(xval, yval) {
+				console.log("sendmouse: " + xval + " " + yval);
+				socket.emit('othermouse',{ x: xval, y: yval });
+			};
+
+			var canvas;
+			var context;
+			var imageback;
+
+			var initcanvas = function() {
+				// canvas = document.getElementById('mycanvas');
+				// context = canvas.getContext('2d');
+				// context.drawImage(imageback, 0, 0);
+
+				imageback = new Image();
+				// imageback.onload = function(){
+				// 	context.drawImage(imageback, 0,0);
+				// }
+
+				// window.onload = function() {
+				// 	//var c = document.getElementById("otherperson");
+				// 	//var ctx = c.getContext("2d");
+				// 	canvas = document.getElementById("mycanvas");
+
+				// 	context = canvas.getContext('2d');
+				// 	// var imageback = document.getElementById("otherperson").src
+
+				// 	var imageback= document.getElementById("otherperson").src
+					
+				// 	context.drawImage(imageback, 0, 0);
+
+				// }
+
+				context.fillStyle="#e6f7ff";
+				context.fillRect(0,0,canvas.width,canvas.height);	
+				
+				canvas.addEventListener('mousemove', function(evt) {
+					
+				// 	console.log("mousedown" + evt.clientX + " " + evt.clientY);
+					
+					// evt.clientX is x but in the entire window, not the canvas
+					// evt.clientY is y
+		
+					// Get the canvas bounding rect
+					var canvasRect = canvas.getBoundingClientRect(); 
+					// Now calculate the mouse position values
+					y = evt.clientY - canvasRect.top; // minus the starting point of the canvas rect
+					x = evt.clientX - canvasRect.left;  // minus the starting point of the canvas rect on the x axis
+				
+					console.log("mousemove x:" + x + " y:" + y);
+					sendmouse(x,y);
+					draw(x,y);
+				}, false);
+			// 	canvas.addEventListener('mouseout', function(evt){
+			// 	osc.stop();
+			// });	
+			};
+
+			var px = 0;
+			var py = 0;
+			//if (onmousedown){
+			var draw = function(xval,yval) {
+				
+				console.log("draw " + xval + " " + yval);
+				
+				
+				context.beginPath();
+	
+				// This is silly but it's what we have to do to get a random hex string
+				context.strokeStyle='#99bbff';
+	
+				context.moveTo(px,py);
+				context.lineTo(xval,yval);
+				context.stroke();
+				
+				px = xval;
+				py = yval;
+							
+			};
+			// }else {
+			// 	console.log("no draw");
+			// }
+			var users = [];
+			var opx = 0;
+			var opy = 0;
+	
+			 //if (onmousedown){
+			 var odraw = function(xval,yval,id) {
+			 	var foundUser = null;
+			 	for (var i = 0; i < users.length; i++) {
+					if (users[i].id == id) {
+						console.log("Found Existing User!");
+						foundUser = users[i];
+						foundUser.x = xval;
+						foundUser.y = yval;
+					}			 		
+			 	}
+			 	//hsb(128,50,50)
+			 	if (foundUser == null) {
+			 		foundUser = {x: xval, y: yval, id: id, px: 0, py: 0, color: "rgb("+(Math.floor(Math.random()*255))+","+(Math.floor(Math.random()*255))+","+(Math.floor(Math.random()*255))+")"}; 
+				 	users.push(foundUser);
+				 	console.log("adding user");
+				}
+				
+				console.log("draw " + foundUser.x + " " + foundUser.y + " " + foundUser.id + " " + foundUser.px + " " + foundUser.py + " " + foundUser.color);
+				
+				context.beginPath();
+	
+				// This is silly but it's what we have to do to get a random hex string
+				//context.strokeStyle='#ff3399';
+				context.strokeStyle=foundUser.color;
+	
+				context.moveTo(foundUser.px, foundUser.py);
+				context.lineTo(foundUser.x,foundUser.y);
+				context.stroke();
+				
+				foundUser.px = foundUser.x;
+				foundUser.py = foundUser.y;
+				opx = xval;
+				opy = yval;
+			};
+
+
+
+		</script>
+
+		<script type="text/javascript">
+
+			function init() {
+				// These help with cross-browser functionality (shim)
+				window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+				navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+				// The video element on the page to display the webcam
+				var video = document.getElementById('thevideo');
+
+				// if we have the method
+				if (navigator.getUserMedia) {
+					navigator.getUserMedia({video: true}, function(stream) {
+							video.src = window.URL.createObjectURL(stream) || stream;
+							video.play();
+
+							var canvas = document.getElementById('myvideo');
+		
+							var context = canvas.getContext('2d');
+							
+
+							setInterval(function() {
+								context.drawImage(video,0,0, 100, 100);
+								socket.send(canvas.toDataURL());
+
+							}, 100);
+
+
+						}, function(error) {alert("Failure " + error.code);});
+				}
+			}
+
+			window.addEventListener('load',init);
+			window.addEventListener('load',initcanvas);
+
+			// var background = new Image():
+			// background.src = "otherperson";
+
+			// background.onload = function() {
+			// 	ctx.drawImage(background,0,0);
+			// }
+		</script>
+	</head>
+	<body> 
+	<!-- onload="initcanvas();"> -->
+		<canvas id="mycanvas"></canvas>
+		<video id="thevideo"></video>
+			<img id="otherperson" ></img>
+			<!-- <canvas id="mycanvas"></canvas> -->
+
+		<!-- <div id="feed"> -->
+			<canvas id="myvideo" ></canvas>
+		<!-- </div> -->
+
+		
+		
+	</body>
+</html>
